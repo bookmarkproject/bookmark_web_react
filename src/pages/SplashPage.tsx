@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { memberApi } from '@/api/memberApi';
-import { useMemberStore } from '@/store/memberStore';
+import { setMember } from '@/store/memberSlice';
 
 export default function SplashPage() {
   const navigate = useNavigate();
-  const { refreshToken } = useAuthStore();
-  const { setMember } = useMemberStore();
+  const dispatch = useAppDispatch();
+  const refreshToken = useAppSelector((state) => state.auth.refreshToken);
 
   useEffect(() => {
     const init = async () => {
@@ -17,7 +17,7 @@ export default function SplashPage() {
       }
       try {
         const res = await memberApi.getMe();
-        setMember(res.data);
+        dispatch(setMember(res.data));
         navigate('/home', { replace: true });
       } catch {
         navigate('/login', { replace: true });

@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { useAuthStore } from '@/store/authStore';
+import { store } from '@/store/store';
+import { setTokens, clearTokens } from '@/store/authSlice';
 
 const BASE_URL = 'https://bookmarkapp.store';
 
@@ -10,7 +11,7 @@ export const axiosClient = axios.create({
 
 // 요청 인터셉터 — accessToken 자동 주입
 axiosClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
+  const token = store.getState().auth.accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,18 +28,18 @@ axiosClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const { refreshToken, setTokens } = useAuthStore.getState();
+        const { refreshToken } = store.getState().auth;
         const res = await axios.post(`${BASE_URL}/auth/refresh/token`, {
           refreshToken,
         });
 
         const { accessToken, refreshToken: newRefreshToken } = res.data;
-        setTokens(accessToken, newRefreshToken);
+        store.dispatch(setTokens({ accessToken, refreshToken: newRefreshToken }));
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosClient(originalRequest);
       } catch {
-        useAuthStore.getState().clearTokens();
+        store.dispatch(clearTokens());
         window.location.href = '/login';
       }
     }
