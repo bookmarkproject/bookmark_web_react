@@ -2,7 +2,7 @@ import axios from 'axios';
 import { store } from '@/store/store';
 import { setAccessToken, clearAccessToken } from '@/store/authSlice';
 
-const BASE_URL = 'https://bookmarkapp.store';
+const BASE_URL = 'http://localhost:8082';
 
 export const axiosClient = axios.create({
   baseURL: BASE_URL,

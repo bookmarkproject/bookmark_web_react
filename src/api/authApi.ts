@@ -1,9 +1,13 @@
-import axios from 'axios';
 import { axiosClient } from './utils/axiosClient';
+import type { Member } from '@/models/member';
+
+export interface LoginResponse extends Member {
+  accessToken: string;
+}
 
 export const authApi = {
   login: (email: string, password: string) =>
-    axiosClient.post('/auth/login', { email, password }),
+    axiosClient.post<LoginResponse>('/auth/login', { email, password }),
 
   signup: (data: {
     email: string;
@@ -11,19 +15,16 @@ export const authApi = {
     name: string;
     nickname: string;
     gender: string;
-    phone: string;
+    phoneNumber: string;
     birthday: string;
   }) => axiosClient.post('/auth/signup', data),
 
   checkNickname: (nickname: string) =>
-    axiosClient.get(`/auth/duplication/nickname`, { params: { nickname } }),
+    axiosClient.get('/auth/duplication/nickname', { params: { nickname } }),
 
   findEmail: (name: string, phone: string) =>
     axiosClient.post('/auth/find/email', { name, phone }),
 
   changePassword: (data: { email: string; password: string; changePasswordToken: string }) =>
     axiosClient.post('/auth/change/password', data),
-
-  refreshToken: (refreshToken: string) =>
-    axios.post('https://bookmarkapp.store/auth/refresh/token', { refreshToken }),
 };
