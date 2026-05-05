@@ -1,10 +1,35 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
+import { authApi } from '@/api/authApi';
 
 export default function SearchPasswordResultPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const changePasswordToken = location.state?.changePasswordToken as string | undefined;
+
+  const { toast, showToast } = useToast();
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!password) { showToast('비밀번호를 입력해주세요.', true); return; }
+    if (password !== passwordConfirm) { showToast('비밀번호가 일치하지 않습니다.', true); return; }
+    if (!changePasswordToken) { showToast('인증 정보가 없습니다. 다시 시도해주세요.', true); return; }
+
+    setLoading(true);
+    try {
+      await authApi.changePassword(password, changePasswordToken);
+      showToast('비밀번호가 변경되었습니다.');
+      setTimeout(() => navigate('/login', { replace: true }), 1500);
+    } catch (e: any) {
+      showToast(e.response?.data?.message || '비밀번호 변경에 실패했습니다.', true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -40,14 +65,17 @@ export default function SearchPasswordResultPage() {
           />
 
           <button
-            onClick={() => {}}
-            className="w-full h-[50px] rounded-[56px] bg-[#4E3CDB] text-white text-[17px] font-bold mt-8 active:opacity-80 transition-opacity"
+            onClick={handleChangePassword}
+            disabled={loading}
+            className="w-full h-[50px] rounded-[56px] bg-[#4E3CDB] text-white text-[17px] font-bold mt-8 disabled:opacity-50 active:opacity-80 transition-opacity"
           >
-            비밀번호 변경
+            {loading ? '변경 중...' : '비밀번호 변경'}
           </button>
 
         </div>
       </div>
+
+      {toast && <Toast message={toast.message} isError={toast.isError} />}
     </div>
   );
 }
