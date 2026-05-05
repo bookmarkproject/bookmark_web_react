@@ -3,14 +3,16 @@ interface Props {
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  onEnter?: () => void;
 }
 
-export default function LoginTextField({ hintText, value, onChange, type = 'text' }: Props) {
+export default function LoginTextField({ hintText, value, onChange, type = 'text', onEnter }: Props) {
   return (
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => e.key === 'Enter' && onEnter?.()}
       placeholder={hintText}
       className="
         w-full max-w-[361px] h-[50px] px-5

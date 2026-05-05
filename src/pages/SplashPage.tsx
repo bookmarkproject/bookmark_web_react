@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/store/hooks';
 import { memberApi } from '@/api/memberApi';
@@ -7,8 +7,12 @@ import { setMember } from '@/store/memberSlice';
 export default function SplashPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
     const init = async () => {
       try {
         const res = await memberApi.getMe();
