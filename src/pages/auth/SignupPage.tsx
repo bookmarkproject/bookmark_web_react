@@ -136,6 +136,7 @@ export default function SignupPage() {
           <Field label="이메일">
             <div className="flex gap-3">
               <Input
+                flex
                 placeholder="이메일"
                 value={email}
                 onChange={setEmail}
@@ -148,6 +149,7 @@ export default function SignupPage() {
             </div>
             <div className="flex gap-3">
               <Input
+                flex
                 placeholder="이메일 인증 코드"
                 value={code}
                 onChange={setCode}
@@ -192,13 +194,13 @@ export default function SignupPage() {
           {/* 생년월일 */}
           <Field label="생년월일">
             <div className="flex gap-2">
-              <Select value={year} onChange={(v) => setYear(Number(v))}>
+              <Select flex value={year} onChange={(v) => setYear(Number(v))}>
                 {years.map((y) => <option key={y} value={y}>{y}년</option>)}
               </Select>
-              <Select value={month} onChange={(v) => setMonth(Number(v))}>
+              <Select flex value={month} onChange={(v) => setMonth(Number(v))}>
                 {months.map((m) => <option key={m} value={m}>{m}월</option>)}
               </Select>
-              <Select value={day} onChange={(v) => setDay(Number(v))}>
+              <Select flex value={day} onChange={(v) => setDay(Number(v))}>
                 {days.map((d) => <option key={d} value={d}>{d}일</option>)}
               </Select>
             </div>
@@ -207,7 +209,7 @@ export default function SignupPage() {
           {/* 닉네임 */}
           <Field label="닉네임">
             <div className="flex gap-3">
-              <Input placeholder="닉네임을 입력하세요." value={nickname} onChange={setNickname} />
+              <Input flex placeholder="닉네임을 입력하세요." value={nickname} onChange={setNickname} />
               <ActionButton onClick={handleCheckNickname}>중복확인</ActionButton>
             </div>
             {isNicknameOk && (
@@ -253,13 +255,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function Input({
-  placeholder, value, onChange, type = 'text', disabled = false,
+  placeholder, value, onChange, type = 'text', disabled = false, flex = false,
 }: {
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
   disabled?: boolean;
+  flex?: boolean;
 }) {
   return (
     <input
@@ -268,7 +271,7 @@ function Input({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="flex-1 h-[48px] px-4 rounded-[12px] text-[15px] outline-none border border-black/10 bg-white disabled:bg-black/5 disabled:text-black/40"
+      className={`${flex ? 'flex-1' : 'w-full'} h-[48px] px-4 rounded-[12px] text-[15px] outline-none border border-black/10 bg-white disabled:bg-black/5 disabled:text-black/40`}
     />
   );
 }
@@ -292,17 +295,18 @@ function ActionButton({
 }
 
 function Select({
-  value, onChange, children,
+  value, onChange, children, flex = false,
 }: {
   value: string | number;
   onChange: (v: string) => void;
   children: React.ReactNode;
+  flex?: boolean;
 }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="flex-1 h-[48px] px-3 rounded-[12px] border border-black/10 bg-white text-[15px] outline-none"
+      className={`${flex ? 'flex-1' : 'w-full'} h-[48px] px-3 rounded-[12px] border border-black/10 bg-white text-[15px] outline-none`}
     >
       {children}
     </select>
