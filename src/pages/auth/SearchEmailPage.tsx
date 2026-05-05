@@ -1,10 +1,29 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
+import { authApi } from '@/api/authApi';
 
 export default function SearchEmailPage() {
   const navigate = useNavigate();
+  const { toast, showToast } = useToast();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleFindEmail = async () => {
+    if (!name) { showToast('이름을 입력해주세요.', true); return; }
+    if (!phone) { showToast('휴대폰 번호를 입력해주세요.', true); return; }
+    setLoading(true);
+    try {
+      const res = await authApi.findEmail(name, phone);
+      navigate('/search/email/result', { replace: true, state: { email: res.data.email } });
+    } catch (e: any) {
+      showToast(e.response?.data?.message || '이메일을 찾을 수 없습니다.', true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -41,14 +60,17 @@ export default function SearchEmailPage() {
           </div>
 
           <button
-            onClick={() => {}}
-            className="w-full h-[50px] rounded-[56px] bg-[#4E3CDB] text-white text-[17px] font-bold mt-12 active:opacity-80 transition-opacity"
+            onClick={handleFindEmail}
+            disabled={loading}
+            className="w-full h-[50px] rounded-[56px] bg-[#4E3CDB] text-white text-[17px] font-bold mt-12 disabled:opacity-50 active:opacity-80 transition-opacity"
           >
-            이메일 찾기
+            {loading ? '찾는 중...' : '이메일 찾기'}
           </button>
 
         </div>
       </div>
+
+      {toast && <Toast message={toast.message} isError={toast.isError} />}
     </div>
   );
 }

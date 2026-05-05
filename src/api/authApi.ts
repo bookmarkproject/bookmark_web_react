@@ -22,8 +22,8 @@ export const authApi = {
   checkNickname: (nickname: string) =>
     axiosClient.get('/auth/duplication/nickname', { params: { nickname } }),
 
-  findEmail: (name: string, phone: string) =>
-    axiosClient.post('/auth/find/email', { name, phone }),
+  findEmail: (name: string, phoneNumber: string) =>
+    axiosClient.post<{ email: string }>('/auth/find/email', { name, phoneNumber }),
 
   changePassword: (data: { email: string; password: string; changePasswordToken: string }) =>
     axiosClient.post('/auth/change/password', data),
