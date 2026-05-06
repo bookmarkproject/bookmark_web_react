@@ -70,7 +70,7 @@ export default function HomePage() {
             ) : (
               <HorizontalBookList
                 books={bestSellers}
-                onTap={(book) => navigate(`/book/${book.isbn}`)}
+                onTap={(book) => navigate(`/book/${book.isbn}`, { state: { book } })}
               />
             )}
           </div>
@@ -90,7 +90,7 @@ export default function HomePage() {
             ) : (
               <HorizontalBookList
                 books={latestBooks}
-                onTap={(book) => navigate(`/book/${book.isbn}`)}
+                onTap={(book) => navigate(`/book/${book.isbn}`, { state: { book } })}
               />
             )}
           </div>
@@ -109,7 +109,7 @@ export default function HomePage() {
               <HorizontalRecordingList
                 records={recordingBooks}
                 onContinue={(r) => navigate(`/book/record/${r.id}`)}
-                onDetail={(r) => navigate(`/book/${r.book.isbn}`)}
+                onDetail={(r) => navigate(`/book/${r.book.isbn}`, { state: { book: r.book } })}
               />
             )}
           </div>
