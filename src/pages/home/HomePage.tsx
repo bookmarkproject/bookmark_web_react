@@ -1,17 +1,50 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Book } from '@/models/book';
 import type { BookRecord } from '@/models/bookRecord';
 import BottomNavBar from '@/components/BottomNavBar';
-import { useAppSelector } from '@/store/hooks';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setBookRecords } from '@/store/bookRecordSlice';
+import { bookApi } from '@/api/bookApi';
+import { bookRecordApi } from '@/api/bookRecordApi';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const member = useAppSelector((s) => s.member.member);
-  const recordingBooks = useAppSelector((s) => s.bookRecord.bookRecords);
+  const dispatch = useAppDispatch();
+  const { toast, showToast } = useToast();
 
-  // UI-only: 빈 배열로 초기화 (API 연결 전)
-  const bestSellers: Book[] = [];
-  const latestBooks: Book[] = [];
+  const member = useAppSelector((s) => s.member.member);
+  const allBookRecords = useAppSelector((s) => s.bookRecord.bookRecords);
+  const recordingBooks = allBookRecords.filter((r) => r.status === '독서중');
+
+  const [bestSellers, setBestSellers] = useState<Book[] | null>(null);
+  const [latestBooks, setLatestBooks] = useState<Book[] | null>(null);
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+    fetchAll();
+  }, []);
+
+  const fetchAll = async () => {
+    try {
+      const [bestsellersRes, latestRes, recordsRes] = await Promise.all([
+        bookApi.getBestsellers(),
+        bookApi.getLatest(),
+        bookRecordApi.getMyRecords(),
+      ]);
+      setBestSellers(bestsellersRes.data);
+      setLatestBooks(latestRes.data);
+      dispatch(setBookRecords(recordsRes.data));
+    } catch {
+      showToast('데이터를 불러오는 데 실패했습니다.', true);
+      setBestSellers([]);
+      setLatestBooks([]);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -30,8 +63,10 @@ export default function HomePage() {
             subtitle="이달의 베스트셀러 도서입니다."
           />
           <div className="mt-5">
-            {bestSellers.length === 0 ? (
+            {bestSellers === null ? (
               <SkeletonRow />
+            ) : bestSellers.length === 0 ? (
+              <EmptyBooks />
             ) : (
               <HorizontalBookList
                 books={bestSellers}
@@ -48,8 +83,10 @@ export default function HomePage() {
             subtitle="이달의 신작 도서입니다."
           />
           <div className="mt-5">
-            {latestBooks.length === 0 ? (
+            {latestBooks === null ? (
               <SkeletonRow />
+            ) : latestBooks.length === 0 ? (
+              <EmptyBooks />
             ) : (
               <HorizontalBookList
                 books={latestBooks}
@@ -82,8 +119,27 @@ export default function HomePage() {
 
       {/* 하단 네비게이션 */}
       <BottomNavBar currentIndex={0} />
+
+      {toast && <Toast message={toast.message} isError={toast.isError} />}
     </div>
   );
+}
+
+/* ────────── 훅 ────────── */
+
+function useHorizontalScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
+  return ref;
 }
 
 /* ────────── 서브 컴포넌트 ────────── */
@@ -98,8 +154,9 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
 }
 
 function HorizontalBookList({ books, onTap }: { books: Book[]; onTap: (b: Book) => void }) {
+  const scrollRef = useHorizontalScroll();
   return (
-    <div className="flex gap-[14px] overflow-x-auto pb-1 no-scrollbar">
+    <div ref={scrollRef} className="flex gap-[14px] overflow-x-auto pb-1 no-scrollbar">
       {books.map((book) => (
         <BookCard key={book.isbn} book={book} onTap={() => onTap(book)} />
       ))}
@@ -137,8 +194,9 @@ function HorizontalRecordingList({
   onContinue: (r: BookRecord) => void;
   onDetail: (r: BookRecord) => void;
 }) {
+  const scrollRef = useHorizontalScroll();
   return (
-    <div className="flex gap-[14px] overflow-x-auto pb-1 no-scrollbar">
+    <div ref={scrollRef} className="flex gap-[14px] overflow-x-auto pb-1 no-scrollbar">
       {records.map((record) => (
         <RecordingBookCard
           key={record.id}
@@ -219,6 +277,14 @@ function EmptyRecordingBooks({ onSearch }: { onSearch: () => void }) {
       >
         책 검색하기
       </button>
+    </div>
+  );
+}
+
+function EmptyBooks() {
+  return (
+    <div className="h-[160px] flex items-center justify-center text-[14px] text-black/30">
+      도서 정보가 없습니다.
     </div>
   );
 }
