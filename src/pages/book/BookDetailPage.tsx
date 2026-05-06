@@ -1,16 +1,51 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { Book } from '@/models/book';
-import { useAppSelector } from '@/store/hooks';
+import type { BookRecord } from '@/models/bookRecord';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { appendBookRecords } from '@/store/bookRecordSlice';
+import { bookRecordApi } from '@/api/bookRecordApi';
 
 export default function BookDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const book = location.state?.book as Book | undefined;
+  const dispatch = useAppDispatch();
+  const { toast, showToast } = useToast();
 
+  const book = location.state?.book as Book | undefined;
   const bookRecords = useAppSelector((s) => s.bookRecord.bookRecords);
-  const existingRecord = book
+  const existingRecord: BookRecord | undefined = book
     ? bookRecords.find((r) => r.book.isbn === book.isbn && r.status === '독서중')
     : undefined;
+
+  const [loading, setLoading] = useState(false);
+
+  const handleAction = async () => {
+    if (existingRecord) {
+      navigate(`/book/record/${existingRecord.id}`, { state: { bookRecord: existingRecord } });
+      return;
+    }
+    if (!book) return;
+
+    setLoading(true);
+    try {
+      const bookToSend: Book = {
+        ...book,
+        imageUrl: book.imageUrl.replace('coversum', 'cover500'),
+      };
+      console.log(bookToSend)
+      const res = await bookRecordApi.create(bookToSend);
+      const newRecord: BookRecord = res.data;
+      dispatch(appendBookRecords([newRecord]));
+      navigate(`/book/record/${newRecord.id}`, { state: { bookRecord: newRecord } });
+    } catch (e: any) {
+      showToast(e.response?.data?.message || '기록 생성에 실패했습니다.', true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!book) {
     return (
@@ -62,13 +97,17 @@ export default function BookDetailPage() {
 
           {/* 액션 버튼 */}
           <button
-            className="w-full h-[50px] rounded-[56px] bg-[#4E3CDB] text-white text-[15px] font-bold mt-8 active:opacity-80 transition-opacity"
+            onClick={handleAction}
+            disabled={loading}
+            className="w-full h-[50px] rounded-[56px] bg-[#4E3CDB] text-white text-[15px] font-bold mt-8 disabled:opacity-50 active:opacity-80 transition-opacity"
           >
-            {existingRecord ? '계속 읽기' : '기록하기'}
+            {loading ? '처리 중...' : existingRecord ? '계속 읽기' : '기록하기'}
           </button>
 
         </div>
       </div>
+
+      {toast && <Toast message={toast.message} isError={toast.isError} />}
     </div>
   );
 }
