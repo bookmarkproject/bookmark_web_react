@@ -14,7 +14,9 @@ export const bookLogApi = {
 
   saveOverLog: (data: {
     bookRecordId: number;
+    questions: string[];
     answers: string[];
+    logType: string;
   }) => axiosClient.post('/book/log/over', data),
 
   getLogsByRecordId: (id: number) =>
