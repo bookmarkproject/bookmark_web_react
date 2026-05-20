@@ -108,7 +108,7 @@ export default function HomePage() {
             ) : (
               <HorizontalRecordingList
                 records={recordingBooks}
-                onContinue={(r) => navigate(`/book/record/${r.id}`)}
+                onContinue={(r) => navigate(`/book/record/${r.id}`, { state: { bookRecord: r } })}
                 onDetail={(r) => navigate(`/book/${r.book.isbn}`, { state: { book: r.book } })}
               />
             )}
