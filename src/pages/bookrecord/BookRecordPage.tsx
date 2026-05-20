@@ -1,17 +1,48 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import type { BookRecord } from '@/models/bookRecord';
 import type { BookLog } from '@/models/bookLog';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
+import { bookLogApi } from '@/api/bookLogApi';
 
 export default function BookRecordPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
+  const { toast, showToast } = useToast();
 
   const bookRecord = location.state?.bookRecord as BookRecord | undefined;
 
-  // UI-only: 로그 목록 (API 연결 전)
-  const [bookLogs] = useState<BookLog[] | null>(null);
+  const [bookLogs, setBookLogs] = useState<BookLog[] | null>(null);
+  const [bookLogsIsOver, setBookLogsIsOver] = useState<BookLog[]>([]);
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    if (!bookRecord || hasRun.current) return;
+    hasRun.current = true;
+
+    const fetch = async () => {
+      try {
+        const res = await bookLogApi.getLogsByRecordId(bookRecord.id);
+        const all: BookLog[] = res.data;
+        setBookLogs(all.filter((l) => l.logType === '일반'));
+        setBookLogsIsOver(all.filter((l) => l.logType === '완독'));
+      } catch {
+        showToast('독서 기록을 불러오는 데 실패했습니다.', true);
+        setBookLogs([]);
+      }
+    };
+    fetch();
+  }, []);
+
+  const handleOverLog = () => {
+    if (bookLogsIsOver.length === 0) {
+      navigate(`/book/record/${id}/over`, { state: { bookRecord } });
+    } else {
+      navigate(`/book/record/${id}/log/${bookLogsIsOver[0].id}/over`, { state: { bookRecord } });
+    }
+  };
 
   if (!bookRecord) {
     return (
@@ -88,7 +119,7 @@ export default function BookRecordPage() {
             )}
             {status === '완독' && (
               <button
-                onClick={() => navigate(`/book/record/${id}/over`, { state: { bookRecord } })}
+                onClick={handleOverLog}
                 className="w-full h-[50px] rounded-[56px] bg-black/10 text-black text-[13px] font-bold active:opacity-80 transition-opacity"
               >
                 완독 감상평
@@ -97,7 +128,7 @@ export default function BookRecordPage() {
           </div>
 
           {/* 지난 독서 기록 */}
-          <div className="mt-8">
+          <div className="mt-8 pb-4">
             <p className="text-[22px] font-bold tracking-[-0.44px]">지난 독서 기록</p>
             <div className="mt-6">
               {bookLogs === null ? (
@@ -111,10 +142,7 @@ export default function BookRecordPage() {
                       <LogItem
                         log={log}
                         onTap={() =>
-                          navigate(
-                            `/book/record/${id}/log/${log.id}`,
-                            { state: { bookRecord } }
-                          )
+                          navigate(`/book/record/${id}/log/${log.id}`, { state: { bookRecord } })
                         }
                       />
                     </li>
@@ -126,6 +154,8 @@ export default function BookRecordPage() {
 
         </div>
       </div>
+
+      {toast && <Toast message={toast.message} isError={toast.isError} />}
     </div>
   );
 }
@@ -146,17 +176,13 @@ function LogItem({ log, onTap }: { log: BookLog; onTap: () => void }) {
 
   return (
     <button onClick={onTap} className="flex items-start gap-5 w-full text-left">
-      {/* 북마크 아이콘 */}
       <div className="w-10 h-10 rounded-full bg-[#4E3CDB] flex items-center justify-center shrink-0">
         <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
           <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />
         </svg>
       </div>
-
       <div className="flex flex-col gap-0.5">
-        <p className="text-[17px] font-bold text-black tracking-[-0.34px]">
-          {formattedDate} 독서
-        </p>
+        <p className="text-[17px] font-bold text-black tracking-[-0.34px]">{formattedDate} 독서</p>
         <p className="text-[13px] text-black/70 tracking-[-0.26px]">
           페이지 : {log.pageStart} ~ {log.pageEnd}
         </p>
