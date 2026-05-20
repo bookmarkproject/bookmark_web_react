@@ -16,8 +16,7 @@ export default function HomePage() {
   const { toast, showToast } = useToast();
 
   const member = useAppSelector((s) => s.member.member);
-  const allBookRecords = useAppSelector((s) => s.bookRecord.bookRecords);
-  const recordingBooks = allBookRecords.filter((r) => r.status === '독서중');
+  const recordingBooks = useAppSelector((s) => s.bookRecord.bookRecords);
 
   const [bestSellers, setBestSellers] = useState<Book[] | null>(null);
   const [latestBooks, setLatestBooks] = useState<Book[] | null>(null);
@@ -221,15 +220,26 @@ function RecordingBookCard({
   const truncate = (s: string) => (s.length > 8 ? `${s.slice(0, 8)}...` : s);
   const imgUrl = record.book.imageUrl.replace('coversum', 'cover500');
   const totalPage = record.book.page ?? 1;
-  const percent = ((record.page / totalPage) * 100).toFixed(2);
+  const isOver = record.status === '완독';
+  const progress = isOver ? 100 : Math.min((record.page / totalPage) * 100, 100);
+  const percent = progress.toFixed(2);
 
   return (
     <div className="flex flex-col shrink-0 w-[160px]">
-      <img
-        src={imgUrl}
-        alt={record.book.title}
-        className="w-[160px] h-[160px] rounded-[14px] object-cover"
-      />
+      {/* 이미지 + 완독 배지 */}
+      <div className="relative w-[160px] h-[160px]">
+        <img
+          src={imgUrl}
+          alt={record.book.title}
+          className="w-full h-full rounded-[14px] object-cover"
+        />
+        {isOver && (
+          <span className="absolute top-2 left-2 text-[11px] font-bold text-white bg-[#4E3CDB] rounded-full px-2 py-0.5">
+            완독
+          </span>
+        )}
+      </div>
+
       <p className="mt-1 text-[15px] font-bold tracking-[-0.3px] text-black leading-snug">
         {truncate(record.book.title)}
       </p>
@@ -241,21 +251,30 @@ function RecordingBookCard({
       <div className="mt-1.5 h-3 rounded-full bg-black/10 overflow-hidden">
         <div
           className="h-full rounded-full bg-[#4E3CDB] transition-all"
-          style={{ width: `${Math.min((record.page / totalPage) * 100, 100)}%` }}
+          style={{ width: `${progress}%` }}
         />
       </div>
       <p className="text-[8px] text-black/50 mt-0.5">
-        {record.page} / {totalPage} &nbsp;{percent}%
+        {isOver ? `${totalPage} / ${totalPage}` : `${record.page} / ${totalPage}`} &nbsp;{percent}%
       </p>
 
       {/* 버튼 */}
       <div className="flex gap-2 mt-2.5">
-        <button
-          onClick={onContinue}
-          className="flex-1 h-10 rounded-[10px] bg-[#4E3CDB] text-white text-[9px] font-bold active:opacity-80 transition-opacity"
-        >
-          계속 읽기
-        </button>
+        {isOver ? (
+          <button
+            onClick={onContinue}
+            className="flex-1 h-10 rounded-[10px] bg-[#4E3CDB] text-white text-[9px] font-bold active:opacity-80 transition-opacity"
+          >
+            기록 보기
+          </button>
+        ) : (
+          <button
+            onClick={onContinue}
+            className="flex-1 h-10 rounded-[10px] bg-[#4E3CDB] text-white text-[9px] font-bold active:opacity-80 transition-opacity"
+          >
+            계속 읽기
+          </button>
+        )}
         <button
           onClick={onDetail}
           className="flex-1 h-10 rounded-[10px] bg-[rgba(47,37,126,0.09)] text-black text-[9px] font-bold active:opacity-80 transition-opacity"

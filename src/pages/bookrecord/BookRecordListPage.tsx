@@ -5,9 +5,7 @@ import { useAppSelector } from '@/store/hooks';
 
 export default function BookRecordListPage() {
   const navigate = useNavigate();
-  const recordingBooks = useAppSelector((s) =>
-    s.bookRecord.bookRecords.filter((r) => r.status === '독서중')
-  );
+  const recordingBooks = useAppSelector((s) => s.bookRecord.bookRecords);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -47,6 +45,7 @@ export default function BookRecordListPage() {
 function RecordItem({ record, onTap }: { record: BookRecord; onTap: () => void }) {
   const truncate = (s: string, max: number) =>
     s.length > max ? `${s.slice(0, max)}...` : s;
+  const isOver = record.status === '완독';
 
   return (
     <button onClick={onTap} className="flex items-start gap-[10px] w-full text-left">
@@ -56,9 +55,16 @@ function RecordItem({ record, onTap }: { record: BookRecord; onTap: () => void }
         className="w-[60px] h-[70px] object-cover rounded-[4px] shrink-0"
       />
       <div className="flex flex-col min-w-0">
-        <p className="text-[15px] font-bold text-black leading-snug">
-          {truncate(record.book.title, 20)}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-[15px] font-bold text-black leading-snug">
+            {truncate(record.book.title, 20)}
+          </p>
+          {isOver && (
+            <span className="shrink-0 text-[11px] font-bold text-white bg-[#4E3CDB] rounded-full px-2 py-0.5">
+              완독
+            </span>
+          )}
+        </div>
         <p className="mt-0.5 text-[13px] font-semibold text-[rgba(23,20,46,0.62)]">
           {truncate(record.book.author, 20)}
         </p>
