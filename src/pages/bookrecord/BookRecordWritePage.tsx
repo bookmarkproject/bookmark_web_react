@@ -1,6 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { BookRecord } from '@/models/bookRecord';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
+import { useAppDispatch } from '@/store/hooks';
+import { updateBookRecord } from '@/store/bookRecordSlice';
+import { bookLogApi } from '@/api/bookLogApi';
+import { bookRecordApi } from '@/api/bookRecordApi';
 
 const QUESTIONS = [
   {
@@ -24,6 +30,8 @@ const QUESTIONS = [
 export default function BookRecordWritePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useAppDispatch();
+  const { toast, showToast } = useToast();
 
   const bookRecord = location.state?.bookRecord as BookRecord | undefined;
   const seconds = (location.state?.seconds as number | undefined) ?? 0;
@@ -34,6 +42,7 @@ export default function BookRecordWritePage() {
   const [pageStart, setPageStart] = useState(1);
   const [pageEnd, setPageEnd] = useState(Math.min(2, totalPage));
   const [answers, setAnswers] = useState<string[]>(Array(QUESTIONS.length).fill(''));
+  const [loading, setLoading] = useState(false);
 
   const pageStartItems = useMemo(
     () => Array.from({ length: totalPage }, (_, i) => i + 1),
@@ -52,10 +61,38 @@ export default function BookRecordWritePage() {
   const setAnswer = (idx: number, val: string) =>
     setAnswers((prev) => prev.map((a, i) => (i === idx ? val : a)));
 
-  const handleSubmit = () => {
-    // API 연결 예정 (readingTime = Math.floor(seconds / 60))
-    void seconds;
-    void navigate;
+  const handleSubmit = async () => {
+    if (answers.some((a) => !a.trim())) {
+      showToast('모든 질문에 대한 답변을 해주세요.', true);
+      return;
+    }
+    if (!bookRecord) return;
+
+    setLoading(true);
+    try {
+      await bookLogApi.saveLog({
+        bookRecordId: bookRecord.id,
+        isOver,
+        pageStart,
+        pageEnd,
+        readingTime: Math.floor(seconds / 60),
+        questions: QUESTIONS.map((q) => q.subtitle),
+        answers,
+        logType: '일반',
+      });
+
+      const recordRes = await bookRecordApi.getById(bookRecord.id);
+      const updatedRecord: BookRecord = recordRes.data;
+      dispatch(updateBookRecord(updatedRecord));
+      navigate(`/book/record/${bookRecord.id}`, {
+        replace: true,
+        state: { bookRecord: updatedRecord },
+      });
+    } catch (e: any) {
+      showToast(e.response?.data?.message || '기록에 실패했습니다.', true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!bookRecord) {
@@ -168,13 +205,16 @@ export default function BookRecordWritePage() {
           {/* 기록하기 버튼 */}
           <button
             onClick={handleSubmit}
-            className="w-full h-[50px] rounded-[56px] bg-[#4E3CDB] text-white text-[14px] font-bold mb-4 active:opacity-80 transition-opacity"
+            disabled={loading}
+            className="w-full h-[50px] rounded-[56px] bg-[#4E3CDB] text-white text-[14px] font-bold mb-4 disabled:opacity-50 active:opacity-80 transition-opacity"
           >
-            기록하기
+            {loading ? '기록 중...' : '기록하기'}
           </button>
 
         </div>
       </div>
+
+      {toast && <Toast message={toast.message} isError={toast.isError} />}
     </div>
   );
 }
